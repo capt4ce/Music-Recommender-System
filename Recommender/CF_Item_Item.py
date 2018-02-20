@@ -42,9 +42,6 @@ class CF_Item_Item():
         # calculating similarity between user_items and unique all_items in the training data
         # filling is column wise / along the rows
         for i in range(0,len(all_items)):
-            # testing
-            # print(self.training_data[self.item_id_col] == all_items[i])
-
             # calculate unique listeners (users) of song (item) i
             items_i_data = self.training_data[self.training_data[self.item_id_col] == all_items[i]]
             users_i = set(items_i_data[self.user_id_col].unique())
@@ -57,6 +54,7 @@ class CF_Item_Item():
                 users_intersection = users_i.intersection(users_j)
 
                 # calculate cooccurence_matrix[j,i] as Jaccard Index
+                # it uses IOU (Intersection Over Union)
                 if len(users_intersection) != 0:
                     # calculate union of listeners of songs i and j
                     users_union = users_i.union(users_j)
@@ -77,14 +75,15 @@ class CF_Item_Item():
         # weighted average score = sum of each item (of all_item) occurance corresponding to each user_item / number of user_items
         # it is to get the weight for each item in all_items for doing fair scoring 
         item_scores = cooccurence_matrix.sum(axis=0) / float(cooccurence_matrix.shape[0])
-        # converting the weight score into a list
+        # converting the weight scores into a list to be enumerated
+        # it takes the first element (index 0) because the resulting array from the previous operation is in a multidimntional array
         item_scores = np.array(item_scores)[0].tolist()
 
         # relating the score with the song index
         # and sort it based on the score in descending order
         sorted_score_idx = sorted(((score,i) for i, score in enumerate(item_scores)), reverse=True)
 
-        # creating recommendation dataframe
+        # creating empty recommendation dataframe
         df = pd.DataFrame(columns=['user_id', 'song', 'score', 'rank'])
 
         # filling the dataframe with the top recommendations
@@ -110,7 +109,7 @@ class CF_Item_Item():
         print("No. of unique items (songs) for the user: %d" % len(user_items))
 
         all_items = self.getAllItems()
-        print("no. of unique items (songs) in the training set: %d" % len(all_items))
+        print("No. of unique items (songs) in the training set: %d" % len(all_items))
 
         cooccurence_matrix = self.constructCoocuranceMatrix(user_items, all_items)
 

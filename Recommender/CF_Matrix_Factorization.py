@@ -43,10 +43,11 @@ class SVD():
         self.corr = np.corrcoef(SVD_matrix)
 
     def recommend(self, no_of_recommendations, item=None):
-
         # matching the items with the supplied item
+        # if no item supplied, choose a random item from the item_df
         if item==None:
-            query_index = (self.item_df.index[self.item_df[self.item_id_col] == 'Somebody To Love - Justin Bieber'])
+            # query_index = (self.item_df.index[self.item_df[self.item_id_col] == 'Somebody To Love - Justin Bieber'])
+            query_index = [np.random.choice(len(self.item_df))]
         else:
             query_index = (self.item_df.index[self.item_df[self.item_id_col] == item])
         print(query_index)

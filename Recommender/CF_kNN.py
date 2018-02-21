@@ -33,7 +33,7 @@ class CF_kNN():
         # making item - user list
         self.training_data_pivot = grouped_train_data.pivot(index=item_id_col, columns=user_id_col, values=pivot_id_col).fillna(0)
 
-        # converting the list into sparse matrix
+        # converting the list into Compressed Sparse Row (CSR) matrix
         self.training_data_sparse_matrix = csr_matrix(self.training_data_pivot.values)
 
         # specifiying to use cosine similarity as distance measure and brute algorithm

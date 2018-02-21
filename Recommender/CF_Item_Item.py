@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 
 class CF_Item_Item():
+    #==============================================================
+    # Item - Item Collaborative Filtering based Recommender System
+    # using Coocurrence Matrix
+    #==============================================================
+
     def __init__(self):
         self.training_data = None
         self.user_id_col = None

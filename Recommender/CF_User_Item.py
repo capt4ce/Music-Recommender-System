@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 
 class CF_User_Item():
+    #================================================================
+    # Item - Item Collaborative Filtering based Recommender System
+    # using Matrix Factorization (SVD - Singular Value Decomposition)
+    #================================================================
+    
     def __init__(self):
         self.training_data = None
         # self.user_id = None

@@ -5,6 +5,11 @@ from scipy.sparse import csr_matrix
 from fuzzywuzzy import fuzz
 
 class CF_kNN():
+    #==============================================================
+    # User - Item Collaborative Filtering based Recommender System
+    # using k-Nearest-Neighbor
+    #==============================================================
+
     def __init__(self):
         self.training_data = None
         self.training_data_pivot = None
@@ -26,7 +31,7 @@ class CF_kNN():
 
         # pivoting the grouped training data
         # making item - user list
-        self.training_data_pivot = grouped_train_data.pivot_table(index=item_id_col, columns=user_id_col, values=pivot_id_col).fillna(0)
+        self.training_data_pivot = grouped_train_data.pivot(index=item_id_col, columns=user_id_col, values=pivot_id_col).fillna(0)
 
         # converting the list into sparse matrix
         self.training_data_sparse_matrix = csr_matrix(self.training_data_pivot.values)

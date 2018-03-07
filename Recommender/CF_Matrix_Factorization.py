@@ -32,8 +32,10 @@ class SVD():
         self.item_df.columns=['song']
 
         # applying dimensionality reduction / compression
-        # setting 12 latent variables
-        # and 17 random states
+        # n_components = no of latent variables / Desired dimensionality of output data. 
+        #                Must be strictly less than the number of features. 
+        #                The default value is useful for visualisation.
+        # random_state = seed used by the random number generator
         SVD = TruncatedSVD(n_components=12, random_state=17)
 
         # fitting pivot data to SVD model
@@ -46,7 +48,6 @@ class SVD():
         # matching the items with the supplied item
         # if no item supplied, choose a random item from the item_df
         if item==None:
-            # query_index = (self.item_df.index[self.item_df[self.item_id_col] == 'Somebody To Love - Justin Bieber'])
             query_index = [np.random.choice(len(self.item_df))]
         else:
             query_index = (self.item_df.index[self.item_df[self.item_id_col] == item])

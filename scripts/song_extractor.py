@@ -43,6 +43,6 @@ def extractBulk(dirPath):
 
 if __name__ == '__main__':
     # print(list(filter(lambda x: x[:3] == 'get', hdf5_getters.__dict__.keys())))
-    song_data_df = extractBulk('../dataset/MillionSongSubset')
+    song_data_df = extractBulk('../dataset/raw/MillionSongSubset')
     print(song_data_df)
     song_data_df.to_csv('../dataset/MSD_songs.csv', sep='\t', encoding='utf-8', index=False)

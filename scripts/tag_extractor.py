@@ -36,6 +36,15 @@ def extractBulk(dirPath):
     return song_tags_df
 
 if __name__ == '__main__':
-    song_tags_df = extractBulk('../dataset/lastfm_subset')
+    song_tags_df = extractBulk('../dataset/raw/lastfm_subset')
+
+    # normalizing similar tags
+    similar_tags = [{'favorite':['favorites','favourites','favourite','favorite_songs']}]
+    for i in similar_tags:
+        for key, j in i.items():
+            for k in j:
+                song_tags_df.replace(to_replace=k, value=key, inplace=True)
     print(song_tags_df)
+
+    
     song_tags_df.to_csv('../dataset/LAST_FM_tags.csv', sep='\t', encoding='utf-8', index=False)

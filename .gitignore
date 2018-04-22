@@ -1,2 +1,9 @@
 /dataset
+/dataset/raw
+/dataset/song_preview
+/scripts/pygn/credentials.txt
+/Recommender/DeepContent/used_weights
+/dataset/train_triplets.txt
+/dataset/10000.txt
 *.pyc
+*.npy

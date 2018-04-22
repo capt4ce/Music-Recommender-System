@@ -94,6 +94,9 @@ if 'preview_url' not in df.columns:
     df['preview_info']=None
     print('column doesn\'t exist yet')
 
+if 'genres' not in df.columns:
+    df['genres']=None
+
 len_selected = len(df)
 unprocessed_num = df['preview_url'].isnull().sum()
 i = len_selected - unprocessed_num
@@ -126,19 +129,32 @@ for idx, row in processed_df.iterrows():
 
         response = access_info(info_url)
 
-        try: 
-            if (len(response['results']) == 0):
-                preview_info = 'not found'
-                preview_url = 'not found'
-            else:
-                preview_info = response['results'][0]['trackName']+' - '+response['results'][0]['artistName']
+        # try: 
+        if (len(response['results']) == 0):
+            preview_info = 'not found'
+            preview_url = 'not found'
+            genres= 'not found'
+        else:
+            preview_info = response['results'][0]['trackName']+' - '+response['results'][0]['artistName']
+
+            if ('previewUrl' in response['results'][0]):
                 preview_url = response['results'][0]['previewUrl']
-        except:
-            print(response)
-            break
+            else:
+                preview_url = 'not found'
+
+            if ('genres' in response['results'][0]):
+                genres = str(response['results'][0]['genres'])
+            else:
+                genres = 'not found'
+
+        # except:
+        #     print(response)
+        #     print(row['title'])
+        #     break
 
         processed_df.preview_url.iloc[[idx]]=preview_url
         processed_df.preview_info.iloc[[idx]]=preview_info
+        processed_df.genres.iloc[[idx]]=genres
 
     if (i%10==0 or i==unprocessed_num):
         processed_df.to_csv('../dataset/selected_song_based_on_tags.csv', sep='\t', encoding='utf-8', index=False)
@@ -147,6 +163,7 @@ for idx, row in processed_df.iterrows():
     if (i==unprocessed_num):
         break
 
+processed_df.to_csv('../dataset/selected_song_based_on_tags.csv', sep='\t', encoding='utf-8', index=False)
 print('Finished!')
 
 

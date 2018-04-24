@@ -223,8 +223,8 @@ class SongLabellingModel():
             df = pandas.read_csv('randomized.csv', sep='\t')            
         else:
             df = pandas.read_csv(self.label_map_boolean_path, sep='\t')
-        df = df.reindex(np.random.permutation(df.index))
-        df.to_csv('randomized.csv', sep='\t', encoding='utf-8', index=False)
+            df = df.reindex(np.random.permutation(df.index))
+            df.to_csv('randomized.csv', sep='\t', encoding='utf-8', index=False)
         df = df[start:]
 
         print(len(df))
@@ -237,7 +237,7 @@ class SongLabellingModel():
         # if the numpy file is already there, so no repeated feature sampling again
         pass_melgram = False
 
-        for i in range(math.ceil(len(df)/split_ratio)):
+        for i in range(math.ceil(len(df)/chunk_content)):
             # if (i*chunk_train)+chunk_content>=len(df):
             #         part_df = df[i*chunk_train:]
             # else:
@@ -322,4 +322,4 @@ class SongLabellingModel():
 
 if __name__ == '__main__':
     labellingModel = SongLabellingModel()
-    model = labellingModel.getModel(True, 1500)
+    model = labellingModel.getModel(True)

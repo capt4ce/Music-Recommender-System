@@ -1,81 +1,124 @@
-import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import sys  
-from LabellingModel import SongLabellingModel
+import pandas
+import numpy as np
+import math
 
-reload(sys)   
-sys.setdefaultencoding('utf8')
+class ContentRecommender:
+    def __init__(self,label_map_path = '../../dataset/deep_learning/label_map(boolean_mood).csv', main_song_label_path = '../../dataset/main_song_labels.csv', main_labels_path = '../../dataset/main_labels.csv', user_rating_path = '../../dataset/main_user_rating.csv'):
+        self.label_map_path = label_map_path
+        self.main_song_label_path = main_song_label_path
+        self.main_labels_path = main_labels_path
+        self.user_rating_path = user_rating_path
+        self.song_df = pandas.read_csv(self.main_song_label_path, sep='\t')
+        self.TF = None
+        self.user_profile = None
+        self.rating_df = None
+        self.similarityMatrix = None
 
-class DeepContentRecommender():
+    def constructLabelVector(self):
+        labels_df = pandas.read_csv(self.main_labels_path, sep='\t')
+        labels_df['label_count'] = 1
 
-    def __init__(self, song_df, tag_df, user_df, model_path, song_preview_dir, label_map_boolean_path):
-        self.song_df = song_df          # unique song with meta data
-        self.user_df = user_df          # unique user with listening song_ids
-        self.tag_df = tag_df            # raw list of song-tag pair for easy tag-specific or song-related tag information to be extracted
-        self.model_path = model_path
-        self.song_preview_dir = song_preview_dir
-        self.label_map_boolean_path = label_map_boolean_path
-        self.cosine_sim = None
+        # finding TF
+        TF = labels_df.groupby(['track_id', 'label'], as_index=False).count().rename(columns={'label_count': 'label_count_TF'})
+        label_distinct = labels_df[['label', 'track_id']].drop_duplicates()
 
-    def _buildModel(self):
+        # finding DF
+        DF = label_distinct.groupby('label', as_index=False).count().rename(columns={'track_id': 'label_count_DF'})
+        a=math.log10(len(np.unique(labels_df['track_id'])))
+        DF['IDF']=a-np.log10(DF['label_count_DF'])
+        TF = pandas.merge(TF,DF,on = 'label', how = 'left', sort = False)
+        TF['TF-IDF']=TF['label_count_TF']*TF['IDF']
 
-        # input network
+        # calculating vector
+        Vect_len = TF[['track_id', 'TF-IDF']]
+        Vect_len['TF-IDF-Sq'] = Vect_len['TF-IDF']**2
+        Vect_len = Vect_len.groupby(['track_id'], as_index=False).sum().rename(columns={'TF-IDF-Sq':'TF-IDF-Sq-Sum'})[['track_id', 'TF-IDF-Sq-Sum']]
+        Vect_len['vect_len'] = np.sqrt(Vect_len[['TF-IDF-Sq-Sum']].sum(axis=1))
 
-        # k-level Convolutional Neural Network with ReLUs intead of sigmoid as activation function
+        # calculating the weight of the song
+        TF = pandas.merge(TF, Vect_len, on='track_id', how='left', sort=False)
+        TF['label_wt'] = TF['TF-IDF']/TF['vect_len']
+        self.TF = TF
+        return TF
 
-        pass
-    
-    def train(self):
-        # train data configuration
+    def constructUserProfile(self):
+        TF = self.TF
+        rating_df = pandas.read_csv(self.user_rating_path, sep='\t')
+        rating_df = rating_df[rating_df['rating']!=0]
+        user_distinct = rating_df['username'].drop_duplicates()
+        user_profile = pandas.DataFrame()
+        i=1
 
-        # model construction
+        for user in user_distinct:            
+            user_data = rating_df[rating_df['username']==user]
+            user_data = pandas.merge(user_data,TF, on='track_id', how='inner')
+            user_data_processed = user_data.groupby('label', as_index=False).sum().rename(columns={'label_wt': 'label_pref'})[['label', 'label_pref']]
+            user_data_processed['user'] = user
+            user_profile = user_profile.append(user_data_processed, ignore_index=True)
+            i+=1
 
-        # training
+        self.rating_df = rating_df
+        self.user_profile = user_profile
+        return user_profile
 
-        # saving model
+    def constructCosineSimilarity(self):
+        rating_df = self.rating_df
+        user_profile = self.user_profile
+        TF= self.TF
+        distinct_users=np.unique(rating_df['username'])
+        label_merge_all=pandas.DataFrame()
 
-        # running similarity process
-        self._prepare_recommendation()
-        pass
-    
-    def _prepare_recommendation(self):
-        # using Count Vectorizer and place them in a space and cosine similarity score in taken when title is supplied
-        # loading model
+        i=1
+        for user in distinct_users:
+            # analizing user data one by one
+            print(str(i)+' of '+str(len(distinct_users))+' users')
+            user_profile_all= user_profile[user_profile['user']==user]
+            distinct_songs = np.unique(TF['track_id'])
+            j=1
+            for song in distinct_songs:
 
-        # recommending set of songs, with a song file as a query
+                if j%300==0:
+                    print('song: ', j , 'out of: ', len(distinct_songs) , 'with user: ', i , 'out of: ', len(distinct_users))
 
-        # use the CountVectorizer() instead of TF-IDF, because you do not want to down-weight the presence of tags relative to the songs
-        tags = self.tag_df.groupby('song_id').agg({'tags': lambda x: ' '.join(x)}).reset_index()
-        self.song_df = pd.merge(self.song_df, tags, on='song_id', how='inner')
-        count = CountVectorizer(stop_words='english')
-        count_matrix = count.fit_transform(self.song_df['tags'].values.astype('U'))
-        self.cosine_sim = cosine_similarity(count_matrix, count_matrix)         
+                # analizing song one by one
+                TF_song= TF[TF['track_id']==song]
+                label_merge = pandas.merge(TF_song,user_profile_all,on = 'label', how = 'left', sort = False)
+                label_merge['label_pref']=label_merge['label_pref'].fillna(0)
+                
+                # listing label_value= weight of the label * label profile of the user
+                label_merge['label_value']=label_merge['label_wt']*label_merge['label_pref']
 
-    def recommendFromQuery(self,song_title, no_of_recommendation):
-        self.song_df = self.song_df.reset_index(drop=True)
-        indices = pd.Series(self.song_df.index, index=self.song_df['title'])
-        idx = indices[song_title]
-        sim_scores = list(enumerate(self.cosine_sim[idx]))
-        sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-        sim_scores = sim_scores[1:no_of_recommendation+1]
-        song_indices = [i[0] for i in sim_scores]
-        return self.song_df.iloc[song_indices].reset_index(drop=True)
+                # getting the label weight of the current user-song pair
+                label_wt_val=np.sqrt(np.sum(np.square(label_merge['label_wt']), axis=0))
+                
+                # getting the label value of the current user-song pair
+                label_pref_val=np.sqrt(np.sum(np.square(user_profile_all['label_pref']), axis=0))
 
-    def analyzeNewSong(self, filepath):
-        lModel = SongLabellingModel(self.model_path, self.song_preview_dir, self.label_map_boolean_path)
-        model = lModel.getModel()
-        return lModel.predict(filepath)
+                # summing the label_value (rating) of user-song pair
+                label_merge_final = label_merge.groupby(['user','track_id']).agg({'label_value': 'sum'}).rename(columns = {'label_value': 'score'}).reset_index()
 
-    def recomendFromFile(self, filepath):
-        new_entry = self.analyzeNewSong(filepath)
+                # score = score / (label weight * label value)
+                label_merge_final['score']=label_merge_final['score']/(label_wt_val*label_pref_val)
 
-        # adding result to the DF
-        df = pandas.read_csv(self.label_map_boolean_path, sep='\t')
-        new_df = df.append(new_entry)
-        return new_df
+                label_merge_all = label_merge_all.append(label_merge_final, ignore_index=True)
+                j=j+1
+            i=i+1
+            label_merge_all=label_merge_all.sort_values(by=['user','score']).reset_index(drop=True)
+            
+        self.similarityMatrix = label_merge_all
+        return label_merge_all
 
-        
+    def prepareRecommendation(self):
+        self.constructLabelVector()
+        self.constructUserProfile()
+        self.constructCosineSimilarity()
 
-    def getNewSongPopularity(self, filepath):
-        pass
+    def recommend(self,username):
+        recommendations = self.similarityMatrix[self.similarityMatrix['user']==username].sort_values(by='score', ascending=False)
+        recommendation_detail = pandas.merge(recommendations, self.song_df, on='track_id', how='inner')
+        return recommendation_detail
+
+if __name__ == '__main__':
+    recommender = ContentRecommender()
+    recommender.prepareRecommendation()
+    print(recommender.recommend('ali').head(10))

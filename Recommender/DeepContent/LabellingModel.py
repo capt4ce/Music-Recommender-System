@@ -29,7 +29,7 @@ class SongLabellingModel():
         if model_path:
             self.model_path = model_path
         else:
-            self.model_path = 'use5-bestcheckpoint-0.08- 0.35.hdf5'#'use2-bestcheckpoint-0.02- 0.25.hdf5'#'use-bestcheckpoint-0.08- 0.26.hdf5'#'DLModel.h5'
+            self.model_path = 'use6-bestcheckpoint-1501.04- 0.28.hdf5'#'use2-bestcheckpoint-0.02- 0.25.hdf5'#'use-bestcheckpoint-0.08- 0.26.hdf5'#'DLModel.h5'
 
         if song_preview_dir:
             self.song_preview_dir = song_preview_dir

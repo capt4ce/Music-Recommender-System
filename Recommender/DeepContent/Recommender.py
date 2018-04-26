@@ -1,7 +1,8 @@
 import pandas
 import numpy as np
 import math
-from LabellingModel import SongLabellingModel
+from Recommender.DeepContent.LabellingModel import SongLabellingModel
+
 
 class ContentRecommender:
     def __init__(self,label_map_path = '../../dataset/deep_learning/label_map(boolean_mood).csv', main_song_label_path = '../../dataset/main_song_labels.csv', main_labels_path = '../../dataset/main_labels.csv', user_rating_path = '../../dataset/main_user_rating.csv', matrix_path = 'similarityDataframe.csv', user_profile_path = 'userProfile.csv', label_vector_path = 'labelVector.csv', model_path='bestcheckpoint-0.04- 0.34.hdf5', song_preview_dir='../../dataset/song_preview', label_map_boolean_path='../../dataset/deep_learning/label_map(boolean_mood).csv'):
@@ -77,10 +78,12 @@ class ContentRecommender:
         TF= self.TF
         if user == None:
             distinct_users=np.unique(rating_df['username'])
+            label_merge_all=pandas.DataFrame()
         else:
             distinct_users=[user]
+            label_merge_all = self.similarityMatrix
+            label_merge_all = label_merge_all[label_merge_all['user']!=user]
         print(distinct_users)
-        label_merge_all=pandas.DataFrame()
 
         i=1
         for user in distinct_users:

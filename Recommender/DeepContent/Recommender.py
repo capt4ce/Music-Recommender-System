@@ -1,18 +1,26 @@
 import pandas
 import numpy as np
 import math
+from LabellingModel import SongLabellingModel
 
 class ContentRecommender:
-    def __init__(self,label_map_path = '../../dataset/deep_learning/label_map(boolean_mood).csv', main_song_label_path = '../../dataset/main_song_labels.csv', main_labels_path = '../../dataset/main_labels.csv', user_rating_path = '../../dataset/main_user_rating.csv'):
+    def __init__(self,label_map_path = '../../dataset/deep_learning/label_map(boolean_mood).csv', main_song_label_path = '../../dataset/main_song_labels.csv', main_labels_path = '../../dataset/main_labels.csv', user_rating_path = '../../dataset/main_user_rating.csv', matrix_path = 'similarityDataframe.csv', user_profile_path = 'userProfile.csv', label_vector_path = 'labelVector.csv', model_path='bestcheckpoint-0.04- 0.34.hdf5', song_preview_dir='../../dataset/song_preview', label_map_boolean_path='../../dataset/deep_learning/label_map(boolean_mood).csv'):
         self.label_map_path = label_map_path
         self.main_song_label_path = main_song_label_path
         self.main_labels_path = main_labels_path
         self.user_rating_path = user_rating_path
         self.song_df = pandas.read_csv(self.main_song_label_path, sep='\t')
+        self.matrix_path = matrix_path
+        self.user_profile_path = user_profile_path
+        self.label_vector_path = label_vector_path
         self.TF = None
         self.user_profile = None
         self.rating_df = None
         self.similarityMatrix = None
+
+        self.model_path = model_path
+        self.song_preview_dir = song_preview_dir
+        self.label_map_boolean_path = label_map_boolean_path
 
     def constructLabelVector(self):
         labels_df = pandas.read_csv(self.main_labels_path, sep='\t')
@@ -39,6 +47,7 @@ class ContentRecommender:
         TF = pandas.merge(TF, Vect_len, on='track_id', how='left', sort=False)
         TF['label_wt'] = TF['TF-IDF']/TF['vect_len']
         self.TF = TF
+        TF.to_csv(self.label_vector_path, sep='\t', encoding='utf-8', index=False)
         return TF
 
     def constructUserProfile(self):
@@ -59,13 +68,18 @@ class ContentRecommender:
 
         self.rating_df = rating_df
         self.user_profile = user_profile
+        user_profile.to_csv(self.user_profile_path, sep='\t', encoding='utf-8', index=False)
         return user_profile
 
-    def constructCosineSimilarity(self):
+    def constructCosineSimilarity(self, user=None):
         rating_df = self.rating_df
         user_profile = self.user_profile
         TF= self.TF
-        distinct_users=np.unique(rating_df['username'])
+        if user == None:
+            distinct_users=np.unique(rating_df['username'])
+        else:
+            distinct_users=[user]
+        print(distinct_users)
         label_merge_all=pandas.DataFrame()
 
         i=1
@@ -105,20 +119,54 @@ class ContentRecommender:
             i=i+1
             label_merge_all=label_merge_all.sort_values(by=['user','score']).reset_index(drop=True)
             
+        label_merge_all.to_csv(self.matrix_path, sep='\t', encoding='utf-8', index=False)
         self.similarityMatrix = label_merge_all
         return label_merge_all
 
-    def prepareRecommendation(self):
-        self.constructLabelVector()
-        self.constructUserProfile()
-        self.constructCosineSimilarity()
+    def prepareRecommendation(self, reconstruct=True):
+        if reconstruct:
+            self.constructLabelVector()
+            self.constructUserProfile()
+            self.constructCosineSimilarity()
+        else:
+            self.TF = pandas.read_csv(self.label_vector_path, sep='\t')
+            self.user_profile = pandas.read_csv(self.user_profile_path, sep='\t')
+            self.rating_df = pandas.read_csv(self.user_rating_path, sep='\t')
+            self.similarityMatrix = pandas.read_csv(self.matrix_path, sep='\t')
 
-    def recommend(self,username):
+
+    def recommend(self, username, no_of_recommendation=10):
         recommendations = self.similarityMatrix[self.similarityMatrix['user']==username].sort_values(by='score', ascending=False)
         recommendation_detail = pandas.merge(recommendations, self.song_df, on='track_id', how='inner')
-        return recommendation_detail
+        recommendation_detail = pandas.merge(recommendation_detail, self.rating_df, on='track_id', how='left')[['user','track_id','score', 'title', 'preview_file', 'mp3_file','rating']].fillna(0)
+        print(len(recommendation_detail))
+        recommendation_detail = recommendation_detail.drop_duplicates('track_id').reset_index(drop=True)
+        print(len(recommendation_detail))
+        return recommendation_detail[:no_of_recommendation]
+    
+    def titleSearch(self, title, no_of_result=10):
+        result = self.song_df[self.song_df['title'].str.contains(title, False)][:no_of_result].reset_index(drop=True)
+        return pandas.merge(result, self.rating_df, on='track_id', how='left').fillna(0)
+    
+    def labelSearch(self, query):
+        return
+
+    def rateSong(self, username, track_id, rating):
+        print(self.rating_df.head(10))
+        self.rating_df.loc[len(self.rating_df)]=[username, track_id, rating]
+        print(self.rating_df.head(10))
+        self.constructUserProfile()
+        self.constructCosineSimilarity(username)
+        print(self.rating_df.head(10))
+        self.rating_df.to_csv(self.user_rating_path, sep='\t', encoding='utf-8', index=False)
+        return self
+
+    def analyzeNewSong(self, filepath):
+        lModel = SongLabellingModel(self.model_path, self.song_preview_dir, self.label_map_boolean_path)
+        model = lModel.getModel()
+        return lModel.predict(filepath)
 
 if __name__ == '__main__':
     recommender = ContentRecommender()
     recommender.prepareRecommendation()
-    print(recommender.recommend('ali').head(10))
+    print(recommender.recommend('ali'),5)

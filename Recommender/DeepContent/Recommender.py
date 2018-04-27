@@ -168,7 +168,7 @@ class ContentRecommender:
         result = self.song_df[self.song_df['title'].str.contains(title, False)][:no_of_result].reset_index(drop=True)
         return pandas.merge(result, self.rating_df[self.rating_df['username']==username], on='track_id', how='left').fillna(0)
     
-    def labelSearch(self, query, username,no_of_result=10):
+    def labelSearch(self, query, username=None,no_of_result=10):
         queries = query.split('_')
         recommendations = self.similarityMatrix[self.similarityMatrix['user']==username].sort_values(by='score', ascending=False)
         if len(recommendations)==0:
@@ -181,10 +181,11 @@ class ContentRecommender:
             query_satisfied = analize_df[analize_df['label']==q]
             analize_df = analize_df[analize_df['track_id'].isin(query_satisfied['track_id'])]
         result = analize_df[recommendations.columns].drop_duplicates('track_id').sort_values(by='score', ascending=False)
+        result = result.drop_duplicates('track_id').reset_index(drop=True)
         if len(result)>0:
             print(self.labels_df[self.labels_df['track_id'] == result.track_id.iloc[0]])
             result = pandas.merge(result[:no_of_result], self.song_df, on='track_id', how='inner')
-            return pandas.merge(result, self.rating_df, on='track_id', how='left').fillna(0)
+            return pandas.merge(result, self.rating_df[self.rating_df['username']==username], on='track_id', how='left').fillna(0)
         else:
             return []
 

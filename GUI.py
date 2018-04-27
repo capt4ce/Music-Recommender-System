@@ -248,6 +248,7 @@ def return_emotion():
 
     image_data = open(image_path, 'rb').read()
 
+    print('contacting microsoft Azure Face API...')
     response = requests.post(face_api_url, params=params, headers=headers, data=image_data)
     faces = response.json()
     print(faces)

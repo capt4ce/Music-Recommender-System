@@ -111,7 +111,7 @@ def getRecommendation():
 
 def titleSearch():
     global songs
-    songs=Recommender.titleSearch(mentry2.get())
+    songs=Recommender.titleSearch(mentry2.get(), mentry1.get())
     print(songs)
     lbox.delete(0,'end')
     for i in range(len(songs)):

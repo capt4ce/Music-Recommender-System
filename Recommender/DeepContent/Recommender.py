@@ -17,12 +17,13 @@ class ContentRecommender:
         self.user_rating_path = user_rating_path
         self.song_df = pandas.read_csv(self.main_song_label_path, sep='\t')
         self.labels_df = pandas.read_csv(self.main_labels_path, sep='\t')
+
         self.matrix_path = matrix_path
         self.user_profile_path = user_profile_path
         self.label_vector_path = label_vector_path
         self.TF = None
         self.user_profile = None
-        self.rating_df = None
+        self.rating_df = pandas.read_csv(self.user_rating_path, sep='\t')
         self.similarityMatrix = None
 
         self.model_path = model_path
@@ -66,7 +67,7 @@ class ContentRecommender:
 
     def constructUserProfile(self):
         TF = self.TF
-        rating_df = pandas.read_csv(self.user_rating_path, sep='\t')
+        rating_df = self.rating_df
         rating_df = rating_df[rating_df['rating']!=0]
         user_distinct = rating_df['username'].drop_duplicates()
         user_profile = pandas.DataFrame()
@@ -152,19 +153,20 @@ class ContentRecommender:
 
 
     def recommend(self, username, no_of_recommendation=10):
+        print(self.rating_df[self.rating_df['username']==username])
         recommendations = self.similarityMatrix[self.similarityMatrix['user']==username].sort_values(by='score', ascending=False)
         if len(recommendations)==0:
             recommendations = self.similarityMatrix.sort_values(by='score', ascending=False)
         recommendation_detail = pandas.merge(recommendations, self.song_df, on='track_id', how='inner')
-        recommendation_detail = pandas.merge(recommendation_detail, self.rating_df, on='track_id', how='left')[['user','track_id','score', 'title', 'preview_file', 'mp3_file','rating']].fillna(0)
+        recommendation_detail = pandas.merge(recommendation_detail, self.rating_df[self.rating_df['username']==username], on='track_id', how='left')[['user','track_id','score', 'title', 'preview_file', 'mp3_file','rating']].fillna(0)
         print(len(recommendation_detail))
         recommendation_detail = recommendation_detail.drop_duplicates('track_id').reset_index(drop=True)
         print(len(recommendation_detail))
         return recommendation_detail[:no_of_recommendation]
     
-    def titleSearch(self, title, no_of_result=10):
+    def titleSearch(self, title, username = None, no_of_result=10):
         result = self.song_df[self.song_df['title'].str.contains(title, False)][:no_of_result].reset_index(drop=True)
-        return pandas.merge(result, self.rating_df, on='track_id', how='left').fillna(0)
+        return pandas.merge(result, self.rating_df[self.rating_df['username']==username], on='track_id', how='left').fillna(0)
     
     def labelSearch(self, query, username,no_of_result=10):
         queries = query.split('_')

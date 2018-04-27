@@ -29,7 +29,7 @@ class SongLabellingModel():
         if model_path:
             self.model_path = model_path
         else:
-            self.model_path = 'bestcheckpoint-0.08- 0.30.hdf5'#'use2-bestcheckpoint-0.02- 0.25.hdf5'#'use-bestcheckpoint-0.08- 0.26.hdf5'#'DLModel.h5'
+            self.model_path = 'use7 - bestcheckpoint-0.04- 0.34.hdf5'#'use2-bestcheckpoint-0.02- 0.25.hdf5'#'use-bestcheckpoint-0.08- 0.26.hdf5'#'DLModel.h5'
 
         if song_preview_dir:
             self.song_preview_dir = song_preview_dir
@@ -199,6 +199,7 @@ class SongLabellingModel():
         if os.path.isfile(self.model_path):
             os.rename(self.model_path,modelName)
         model.save_weights(self.model_path)
+        model.save('model'+str(iteration)+'.h5')
         os.remove('training_status.txt')
         f = open('training_status.txt', 'w')
         f.write('%d' % iteration)

@@ -4,6 +4,7 @@ import os
 from tkinter import filedialog
 from tkinter import messagebox
 
+import operator
 
 import requests
 import pygame
@@ -31,8 +32,9 @@ face_api_url = 'https://westcentralus.api.cognitive.microsoft.com/face/v1.0/dete
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 songs_dir = 'dataset/song_mp3/'
+image_path = 'captured.jpg'
 
-Recommender = ContentRecommender('dataset/deep_learning/label_map(boolean_mood).csv', 'dataset/main_song_labels.csv', 'dataset/main_labels.csv', 'dataset/main_user_rating.csv')
+Recommender = ContentRecommender('dataset/deep_learning/label_map(boolean_mood).csv', 'dataset/main_song_labels.csv', 'dataset/main_labels.csv', 'dataset/main_user_rating.csv','Recommender/DeepContent/bestcheckpoint-1501.06- 0.34.hdf5','dataset/song_preview/','dataset/deep_learning/label_map(boolean_mood).csv')
 Recommender.prepareRecommendation(False)
 
 # songs=[
@@ -47,6 +49,8 @@ songs = pandas.DataFrame()
 root = Tk()
 root.minsize(500,500)
 root.configure(background="#1c1c1c")
+frame5 = Frame(root,bg="#1c1c1c",padx=10, pady=10)
+frame5.pack(padx=10, pady=10,side=BOTTOM)
 frame = Frame(root,bg="#1c1c1c",padx=10, pady=10)
 frame.pack(padx=10, pady=10,side=BOTTOM)
 frame4 = Frame(root,bg="#1c1c1c",padx=10, pady=10)
@@ -67,6 +71,11 @@ label1 = ttk.Label(frame1,text='User Name Recommendation',background="#1c1c1c",f
 label1.pack(padx=10, pady=10,side=LEFT)
 mentry1=ttk.Entry(frame1,textvariable = name)
 mentry1.pack(padx=10, pady=10, ipadx=70,ipady=4,side=LEFT)
+
+label1 = ttk.Label(frame5,text='Song Title',background="#1c1c1c",foreground="white")
+label1.pack(padx=10, pady=10,side=LEFT)
+mentry4=ttk.Entry(frame5,textvariable = name)
+mentry4.pack(padx=10, pady=10, ipadx=10,ipady=4,side=LEFT)
 
 lbox = Listbox(root,width=50,height=10)
 # for i in range(len(songs)):
@@ -111,8 +120,11 @@ def titleSearch():
 
 
 def labelSearch():
-    global songs
-    songs=Recommender.labelSearch(mentry3.get())
+    global songs, Recommender, lbox, current_username
+    userId = mentry1.get()
+    current_username=userId
+    songs=Recommender.labelSearch(mentry3.get(), current_username)
+    print(songs)
     lbox.delete(0,'end')
     for i in range(len(songs)):
         lbox.insert(i,songs.loc[i]['title']) 
@@ -161,9 +173,16 @@ def mPlay():
 def add():
     global file,label4
     file = filedialog.askopenfilename()
-    label5.config(text='processing '+file)
-    #label4.pack()
-    print(label5.labelText)
+    if file:
+        label5.config(text='processing '+file)
+        song_title = mentry4.get()
+        #label4.pack()
+        print(label5.cget("text"))
+        print(song_title)
+        print(file)
+        Recommender.addNewSong(song_title,file)
+        label5.config(text=None)
+
 
 def TakeSnapshotAndSave():
     # access the webcam (every webcam has a number, the default is 0)
@@ -197,13 +216,25 @@ def TakeSnapshotAndSave():
         # press the letter "q" to save the picture
         if cv2.waitKey(1) & 0xFF == ord('q'):
             # write the captured image with this name
-            cv2.imwrite('try.jpg',frame)
+            cv2.imwrite(image_path,frame)
             break
 
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
     a = return_emotion()
+    # print(a[0]['faceAttributes']['emotion'])
+    provided_emotions=['happiness','sadness','anger','neutral']
+    emotions = []
+    emotions.append(a[0]['faceAttributes']['emotion'][provided_emotions[0]])
+    emotions.append(a[0]['faceAttributes']['emotion'][provided_emotions[1]])
+    emotions.append(a[0]['faceAttributes']['emotion'][provided_emotions[2]])
+    emotions.append(a[0]['faceAttributes']['emotion'][provided_emotions[3]])
+    index, value = max(enumerate(emotions), key=operator.itemgetter(1))
+    print('highest emotion: '+ str(provided_emotions[index]) + ' : '+ str(value))
+    mentry3.delete(0,END)
+    mentry3.insert(0,provided_emotions[index])
+    labelSearch()
 
  
 def return_emotion():
@@ -215,8 +246,6 @@ def return_emotion():
     'returnFaceAttributes': 'emotion',
     }
 
-    image_path = "C:/Users/Kapil/Desktop/basic-image-processing-master/basic-image-processing-master/try.jpg"
-    # image_path = "C:/Users/Kapil/Downloads/main007.jpg"
     image_data = open(image_path, 'rb').read()
 
     response = requests.post(face_api_url, params=params, headers=headers, data=image_data)
@@ -263,7 +292,7 @@ playbutton.pack(padx=10,pady=10,side=LEFT)
 stopbutton = ttk.Button(frame,text='Stop Music',command=mPause)
 stopbutton.pack(padx=10, pady=10,side=LEFT)
 
-songadd=ttk.Button(frame, text='Add Music',command=add)
+songadd=ttk.Button(frame5, text='Add Music',command=add)
 songadd.pack(padx=10, pady=10, side=LEFT)
 
 cap = ttk.Button(frame3, text = 'Detect Face',command=TakeSnapshotAndSave)

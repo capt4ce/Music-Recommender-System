@@ -1,9 +1,17 @@
-/dataset
 /dataset/raw
 /dataset/song_preview
+/dataset/deep_learning
+/dataset/song_mp3
+/dataset/10000.txt
+/dataset/dataset_for_DL.csv
+/dataset/LAST_FM_tags.csv
+/dataset/MSD_songs.csv
+/dataset/selected_song_based_on_tags.csv
+/dataset/selected_song_based_on_tags (copy).csv
+/dataset/train_triplets.txt
+/dataset/user_listen_created.csv
+
 /scripts/pygn/credentials.txt
 /Recommender/DeepContent/used_weights
-/dataset/train_triplets.txt
-/dataset/10000.txt
 *.pyc
 *.npy

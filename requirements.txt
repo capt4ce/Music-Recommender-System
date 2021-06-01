@@ -59,7 +59,7 @@ Theano==1.0.1
 torch==0.3.0.post4
 torchvision==0.2.0
 tqdm==4.22.0
-urllib3==1.22
+urllib3==1.26.5
 virtualenv==15.1.0
 virtualenv-clone==0.3.0
 Werkzeug==0.14.1

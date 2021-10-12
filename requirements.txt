@@ -28,7 +28,7 @@ numba==0.37.0
 numexpr==2.6.4
 numpy==1.14.1
 olefile==0.45.1
-opencv-python==3.4.0.12
+opencv-python==3.4.7.28
 pandas==0.22.0
 Pillow==5.0.0
 pipenv==11.8.3

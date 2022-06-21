@@ -26,7 +26,7 @@ mplayer.py==0.7.1
 MplayerCtrl==0.3.3
 numba==0.37.0
 numexpr==2.6.4
-numpy==1.14.1
+numpy==1.22.0
 olefile==0.45.1
 opencv-python==3.4.0.12
 pandas==0.22.0

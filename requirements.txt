@@ -33,7 +33,7 @@ pandas==0.22.0
 Pillow==5.0.0
 pipenv==11.8.3
 playsound==1.2.2
-protobuf==3.5.1
+protobuf==3.18.3
 pycosat==0.6.3
 pycparser==2.18
 pydot==1.2.4
